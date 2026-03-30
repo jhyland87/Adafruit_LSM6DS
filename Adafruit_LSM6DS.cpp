@@ -893,3 +893,225 @@ int Adafruit_LSM6DS::readGyroscope(float &x, float &y, float &z) {
 
   return 1;
 }
+
+/**************************************************************************/
+/*!
+    @brief Sets the FIFO operating mode.
+    @param mode The FIFO mode to set. Must be a `lsm6ds_fifo_mode_t`.
+*/
+/**************************************************************************/
+void Adafruit_LSM6DS::setFIFOMode(lsm6ds_fifo_mode_t mode) {
+  Adafruit_BusIO_Register ctrl4 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_CTRL4);
+  Adafruit_BusIO_RegisterBits fifo_mode =
+      Adafruit_BusIO_RegisterBits(&ctrl4, 3, 0);
+  fifo_mode.write(mode);
+}
+
+/**************************************************************************/
+/*!
+    @brief Gets the current FIFO operating mode.
+    @returns The current FIFO mode as a `lsm6ds_fifo_mode_t`.
+*/
+/**************************************************************************/
+lsm6ds_fifo_mode_t Adafruit_LSM6DS::getFIFOMode(void) {
+  Adafruit_BusIO_Register ctrl4 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_CTRL4);
+  Adafruit_BusIO_RegisterBits fifo_mode =
+      Adafruit_BusIO_RegisterBits(&ctrl4, 3, 0);
+  return (lsm6ds_fifo_mode_t)fifo_mode.read();
+}
+
+/**************************************************************************/
+/*!
+    @brief Sets the FIFO watermark threshold (number of words).
+    @param watermark Watermark level, 0-511. An interrupt can be generated
+           when the FIFO count reaches this level.
+*/
+/**************************************************************************/
+void Adafruit_LSM6DS::setFIFOWatermark(uint16_t watermark) {
+  if (watermark > 511)
+    watermark = 511;
+  Adafruit_BusIO_Register ctrl1 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_CTRL1);
+  ctrl1.write(watermark & 0xFF);
+
+  Adafruit_BusIO_Register ctrl2 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_CTRL2);
+  Adafruit_BusIO_RegisterBits wtm_high =
+      Adafruit_BusIO_RegisterBits(&ctrl2, 1, 0);
+  wtm_high.write((watermark >> 8) & 0x01);
+}
+
+/**************************************************************************/
+/*!
+    @brief Gets the FIFO watermark threshold.
+    @returns The current watermark level (0-511).
+*/
+/**************************************************************************/
+uint16_t Adafruit_LSM6DS::getFIFOWatermark(void) {
+  Adafruit_BusIO_Register ctrl1 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_CTRL1);
+  Adafruit_BusIO_Register ctrl2 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_CTRL2);
+  Adafruit_BusIO_RegisterBits wtm_high =
+      Adafruit_BusIO_RegisterBits(&ctrl2, 1, 0);
+
+  uint16_t wtm = ctrl1.read();
+  wtm |= ((uint16_t)wtm_high.read()) << 8;
+  return wtm;
+}
+
+/**************************************************************************/
+/*!
+    @brief Sets the FIFO batch data rate for the accelerometer.
+    @param rate The batch data rate. Must be a `lsm6ds_fifo_data_rate_t`.
+*/
+/**************************************************************************/
+void Adafruit_LSM6DS::setFIFOAccelBatchRate(lsm6ds_fifo_data_rate_t rate) {
+  Adafruit_BusIO_Register ctrl3 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_CTRL3);
+  Adafruit_BusIO_RegisterBits bdr_xl =
+      Adafruit_BusIO_RegisterBits(&ctrl3, 4, 0);
+  bdr_xl.write(rate);
+}
+
+/**************************************************************************/
+/*!
+    @brief Sets the FIFO batch data rate for the gyroscope.
+    @param rate The batch data rate. Must be a `lsm6ds_fifo_data_rate_t`.
+*/
+/**************************************************************************/
+void Adafruit_LSM6DS::setFIFOGyroBatchRate(lsm6ds_fifo_data_rate_t rate) {
+  Adafruit_BusIO_Register ctrl3 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_CTRL3);
+  Adafruit_BusIO_RegisterBits bdr_gy =
+      Adafruit_BusIO_RegisterBits(&ctrl3, 4, 4);
+  bdr_gy.write(rate);
+}
+
+/**************************************************************************/
+/*!
+    @brief Gets the number of unread FIFO words (samples) available.
+    @returns The number of unread words in the FIFO (0-512).
+*/
+/**************************************************************************/
+uint16_t Adafruit_LSM6DS::getFIFOCount(void) {
+  Adafruit_BusIO_Register status1 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_STATUS1);
+  Adafruit_BusIO_Register status2 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_STATUS2);
+  Adafruit_BusIO_RegisterBits diff_high =
+      Adafruit_BusIO_RegisterBits(&status2, 2, 0);
+
+  uint16_t count = status1.read();
+  count |= ((uint16_t)diff_high.read()) << 8;
+  return count;
+}
+
+/**************************************************************************/
+/*!
+    @brief Checks if the FIFO is full.
+    @returns True if FIFO is full.
+*/
+/**************************************************************************/
+bool Adafruit_LSM6DS::getFIFOFull(void) {
+  Adafruit_BusIO_Register status2 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_STATUS2);
+  Adafruit_BusIO_RegisterBits full_bit =
+      Adafruit_BusIO_RegisterBits(&status2, 1, 5);
+  return full_bit.read();
+}
+
+/**************************************************************************/
+/*!
+    @brief Checks if the FIFO has overrun (data was lost).
+    @returns True if FIFO overrun occurred.
+*/
+/**************************************************************************/
+bool Adafruit_LSM6DS::getFIFOOverrun(void) {
+  Adafruit_BusIO_Register status2 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_STATUS2);
+  Adafruit_BusIO_RegisterBits ovr_bit =
+      Adafruit_BusIO_RegisterBits(&status2, 1, 6);
+  return ovr_bit.read();
+}
+
+/**************************************************************************/
+/*!
+    @brief Reads one word (sample) from the FIFO. Each word contains a tag
+           identifying the sensor source and 3 axes of 16-bit data.
+    @param tag Reference to store the data tag (accel, gyro, or temp).
+    @param x Reference to store the X axis raw value.
+    @param y Reference to store the Y axis raw value.
+    @param z Reference to store the Z axis raw value.
+    @returns True if a word was successfully read, false if FIFO is empty.
+*/
+/**************************************************************************/
+bool Adafruit_LSM6DS::readFIFOWord(lsm6ds_fifo_tag_t &tag, int16_t &x,
+                                   int16_t &y, int16_t &z) {
+  if (getFIFOCount() == 0)
+    return false;
+
+  Adafruit_BusIO_Register tag_reg = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_DATA_OUT_TAG);
+  uint8_t tag_byte = tag_reg.read();
+  tag = (lsm6ds_fifo_tag_t)((tag_byte >> 3) & 0x1F);
+
+  Adafruit_BusIO_Register data_reg = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_DATA_OUT_X_L, 6);
+  uint8_t buffer[6];
+  data_reg.read(buffer, 6);
+
+  x = (int16_t)(buffer[1] << 8 | buffer[0]);
+  y = (int16_t)(buffer[3] << 8 | buffer[2]);
+  z = (int16_t)(buffer[5] << 8 | buffer[4]);
+
+  return true;
+}
+
+/**************************************************************************/
+/*!
+    @brief Resets the FIFO by setting bypass mode and restoring the
+           previous mode. This clears all data in the FIFO.
+*/
+/**************************************************************************/
+void Adafruit_LSM6DS::resetFIFO(void) {
+  lsm6ds_fifo_mode_t current_mode = getFIFOMode();
+  setFIFOMode(LSM6DS_FIFO_BYPASS);
+  if (current_mode != LSM6DS_FIFO_BYPASS) {
+    setFIFOMode(current_mode);
+  }
+}
+
+/**************************************************************************/
+/*!
+    @brief Enables the internal hardware timestamp counter. The counter
+           increments at 25 us resolution and can be batched into the FIFO.
+    @param enable True to enable the timestamp counter, false to disable.
+*/
+/**************************************************************************/
+void Adafruit_LSM6DS::enableTimestamp(bool enable) {
+  Adafruit_BusIO_Register ctrl10 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_CTRL10_C);
+  Adafruit_BusIO_RegisterBits ts_en =
+      Adafruit_BusIO_RegisterBits(&ctrl10, 1, 5);
+  ts_en.write(enable);
+}
+
+/**************************************************************************/
+/*!
+    @brief Configures timestamp batching into the FIFO. Timestamps appear
+           as FIFO words with tag LSM6DS_FIFO_TAG_TIMESTAMP. The 6 data
+           bytes contain a 32-bit counter (25 us per tick) in the first
+           4 bytes (little-endian).
+    @param decimation The timestamp batch decimation rate.
+*/
+/**************************************************************************/
+void Adafruit_LSM6DS::enableFIFOTimestamp(lsm6ds_fifo_ts_batch_t decimation) {
+  Adafruit_BusIO_Register ctrl4 = Adafruit_BusIO_Register(
+      i2c_dev, spi_dev, ADDRBIT8_HIGH_TOREAD, LSM6DS_FIFO_CTRL4);
+  Adafruit_BusIO_RegisterBits ts_dec =
+      Adafruit_BusIO_RegisterBits(&ctrl4, 2, 6);
+  ts_dec.write(decimation);
+}

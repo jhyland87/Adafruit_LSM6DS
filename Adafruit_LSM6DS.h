@@ -44,6 +44,15 @@
   0x5C ///< Free-fall, wakeup, timestamp and sleep mode duration
 #define LSM6DS_MD1_CFG 0x5E ///< Functions routing on INT1 register
 
+#define LSM6DS_FIFO_CTRL1 0x07 ///< FIFO control register 1 (watermark low)
+#define LSM6DS_FIFO_CTRL2 0x08 ///< FIFO control register 2 (watermark high)
+#define LSM6DS_FIFO_CTRL3 0x09 ///< FIFO control register 3 (batch data rates)
+#define LSM6DS_FIFO_CTRL4 0x0A ///< FIFO control register 4 (FIFO mode)
+#define LSM6DS_FIFO_STATUS1 0x3A ///< FIFO status register 1
+#define LSM6DS_FIFO_STATUS2 0x3B ///< FIFO status register 2
+#define LSM6DS_FIFO_DATA_OUT_TAG 0x78 ///< FIFO data out tag register
+#define LSM6DS_FIFO_DATA_OUT_X_L 0x79 ///< FIFO data output X low byte
+
 /** The accelerometer data rate */
 typedef enum data_rate {
   LSM6DS_RATE_SHUTDOWN,
@@ -84,6 +93,47 @@ typedef enum hpf_range {
   LSM6DS_HPF_ODR_DIV_9 = 2,
   LSM6DS_HPF_ODR_DIV_400 = 3,
 } lsm6ds_hp_filter_t;
+
+/** FIFO operating modes */
+typedef enum fifo_mode {
+  LSM6DS_FIFO_BYPASS = 0b000,              ///< FIFO disabled
+  LSM6DS_FIFO_MODE = 0b001,                ///< Stop collecting when full
+  LSM6DS_FIFO_CONTINUOUS_TO_FIFO = 0b011,  ///< Continuous until trigger, then FIFO
+  LSM6DS_FIFO_BYPASS_TO_CONTINUOUS = 0b100, ///< Bypass until trigger, then continuous
+  LSM6DS_FIFO_CONTINUOUS = 0b110,           ///< Continuous mode (overwrite old data)
+  LSM6DS_FIFO_BYPASS_TO_FIFO = 0b111,      ///< Bypass until trigger, then FIFO
+} lsm6ds_fifo_mode_t;
+
+/** FIFO batch data rate (BDR) for accel/gyro */
+typedef enum fifo_data_rate {
+  LSM6DS_FIFO_RATE_DISABLED = 0b0000, ///< Not batched in FIFO
+  LSM6DS_FIFO_RATE_12_5_HZ = 0b0001, ///< 12.5 Hz
+  LSM6DS_FIFO_RATE_26_HZ = 0b0010,   ///< 26 Hz
+  LSM6DS_FIFO_RATE_52_HZ = 0b0011,   ///< 52 Hz
+  LSM6DS_FIFO_RATE_104_HZ = 0b0100,  ///< 104 Hz
+  LSM6DS_FIFO_RATE_208_HZ = 0b0101,  ///< 208 Hz
+  LSM6DS_FIFO_RATE_416_HZ = 0b0110,  ///< 416 Hz
+  LSM6DS_FIFO_RATE_833_HZ = 0b0111,  ///< 833 Hz
+  LSM6DS_FIFO_RATE_1_66K_HZ = 0b1000, ///< 1.66 kHz
+  LSM6DS_FIFO_RATE_3_33K_HZ = 0b1001, ///< 3.33 kHz
+  LSM6DS_FIFO_RATE_6_66K_HZ = 0b1010, ///< 6.66 kHz
+} lsm6ds_fifo_data_rate_t;
+
+/** FIFO timestamp batch decimation */
+typedef enum fifo_timestamp_batch {
+  LSM6DS_FIFO_TS_BATCH_DISABLED = 0b00, ///< Timestamp not batched
+  LSM6DS_FIFO_TS_BATCH_DEC_1 = 0b01,    ///< Timestamp at every BDR sample
+  LSM6DS_FIFO_TS_BATCH_DEC_8 = 0b10,    ///< Timestamp every 8 BDR samples
+  LSM6DS_FIFO_TS_BATCH_DEC_32 = 0b11,   ///< Timestamp every 32 BDR samples
+} lsm6ds_fifo_ts_batch_t;
+
+/** FIFO data tag identifying the sensor source */
+typedef enum fifo_tag {
+  LSM6DS_FIFO_TAG_GYRO_NC = 0x01,    ///< Gyroscope data
+  LSM6DS_FIFO_TAG_ACCEL_NC = 0x02,   ///< Accelerometer data
+  LSM6DS_FIFO_TAG_TEMP = 0x03,       ///< Temperature data
+  LSM6DS_FIFO_TAG_TIMESTAMP = 0x04,  ///< Timestamp data
+} lsm6ds_fifo_tag_t;
 
 class Adafruit_LSM6DS;
 
@@ -180,6 +230,21 @@ public:
   void enablePedometer(bool enable);
   void resetPedometer(void);
   uint16_t readPedometer(void);
+
+  void setFIFOMode(lsm6ds_fifo_mode_t mode);
+  lsm6ds_fifo_mode_t getFIFOMode(void);
+  void setFIFOWatermark(uint16_t watermark);
+  uint16_t getFIFOWatermark(void);
+  void setFIFOAccelBatchRate(lsm6ds_fifo_data_rate_t rate);
+  void setFIFOGyroBatchRate(lsm6ds_fifo_data_rate_t rate);
+  uint16_t getFIFOCount(void);
+  bool getFIFOFull(void);
+  bool getFIFOOverrun(void);
+  bool readFIFOWord(lsm6ds_fifo_tag_t &tag, int16_t &x, int16_t &y,
+                    int16_t &z);
+  void resetFIFO(void);
+  void enableFIFOTimestamp(lsm6ds_fifo_ts_batch_t decimation);
+  void enableTimestamp(bool enable);
 
   // Arduino compatible API
   int readAcceleration(float &x, float &y, float &z);

@@ -77,17 +77,12 @@ void loop() {
     }
 
     // Print all 6 channels on every line so the plotter stays in sync
-    Serial.print("AccelX:");
-    Serial.print(accel_x);
-    Serial.print("\tAccelY:");
-    Serial.print(accel_y);
-    Serial.print("\tAccelZ:");
-    Serial.print(accel_z);
-    Serial.print("\tGyroX:");
-    Serial.print(gyro_x);
-    Serial.print("\tGyroY:");
-    Serial.print(gyro_y);
-    Serial.print("\tGyroZ:");
-    Serial.println(gyro_z);
+    Serial.printf("AccelX:%-6i", accel_x);
+    Serial.printf("AccelY:%-6i", accel_y);
+    Serial.printf("AccelZ:%-6i", accel_z);
+    Serial.printf("GyroX:%-6i", gyro_x);
+    Serial.printf("GyroY:%-6i", gyro_y);
+    Serial.printf("GyroZ:%-6i", gyro_z);
+    Serial.println();
   }
 }

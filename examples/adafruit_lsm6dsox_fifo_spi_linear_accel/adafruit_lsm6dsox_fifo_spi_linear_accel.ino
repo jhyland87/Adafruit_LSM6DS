@@ -126,17 +126,12 @@ void loop() {
       continue;
     }
 
-    Serial.print("LinAccX:");
-    Serial.print(lin_x);
-    Serial.print("\tLinAccY:");
-    Serial.print(lin_y);
-    Serial.print("\tLinAccZ:");
-    Serial.print(lin_z);
-    Serial.print("\tGyroX:");
-    Serial.print(gyro_x);
-    Serial.print("\tGyroY:");
-    Serial.print(gyro_y);
-    Serial.print("\tGyroZ:");
-    Serial.println(gyro_z);
+    Serial.printf("LinAccX:%-6i", lin_x);
+    Serial.printf("LinAccY:%-6i", lin_y);
+    Serial.printf("LinAccZ:%-6i", lin_z);
+    Serial.printf("GyroX:%-6i", gyro_x);
+    Serial.printf("GyroY:%-6i", gyro_y);
+    Serial.printf("GyroZ:%-6i", gyro_z);
+    Serial.println();
   }
 }
